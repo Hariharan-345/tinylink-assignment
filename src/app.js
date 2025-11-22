@@ -20,7 +20,10 @@ app.use('/api/links', linksRouter);
 // Favicon handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// Stats page (MUST BE ABOVE redirect route)
+// Health check 
+app.get('/healthz', (req, res) => res.json({ status: "ok" }));
+
+// Stats page 
 app.get('/code/:code', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/stats.html'));
 });
@@ -66,14 +69,11 @@ app.get('/:code', async (req, res) => {
   }
 });
 
-// Health check (important for Render & Railway)
-app.get('/healthz', (req, res) => res.json({ status: "ok" }));
-
 // Home page (root)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Start server normally (for local + Render + Railway)
+// Start server (local + Render + Railway)
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
