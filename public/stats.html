@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TinyLink – Stats</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .stats-container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-container">
+    <h1>Link Statistics</h1>
+    <table>
+      <tr><th>Original URL</th><td id="original"></td></tr>
+      <tr><th>Short Code</th><td id="shortcode"></td></tr>
+      <tr><th>Total Clicks</th><td id="clicks"></td></tr>
+      <tr><th>Created At</th><td id="created"></td></tr>
+      <tr><th>Last Clicked</th><td id="last"></td></tr>
+    </table>
+    <br>
+    <a href="/" style="color: blue;">⬅ Back to Dashboard</a>
+  </div>
+
+  <script>
+    const code = window.location.pathname.split('/')[2];
+
+    fetch(`/api/links/${code}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data || data.error) {
+          document.body.innerHTML = `<h1 style="text-align:center;color:#3163b8;margin-top:4em">404 - Link Not Found</h1>`;
+          return;
+        }
+        document.getElementById("original").innerHTML = `<a href="${data.original_url}" target="_blank">${data.original_url}</a>`;
+        document.getElementById("shortcode").textContent = data.short_code;
+        document.getElementById("clicks").textContent = data.click_count;
+        document.getElementById("created").textContent = new Date(data.created_at).toLocaleString();
+        document.getElementById("last").textContent = data.last_clicked ? new Date(data.last_clicked).toLocaleString() : "Never";
+      });
+  </script>
+</body>
+</html>
