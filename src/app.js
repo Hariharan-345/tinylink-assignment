@@ -11,19 +11,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from /public
+// Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
 
 // API routes
 app.use('/api/links', linksRouter);
 
-// Favicon handler
+// Favicon
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// Health check 
+// Health check FIRST
 app.get('/healthz', (req, res) => res.json({ status: "ok" }));
 
-// Stats page 
+// Home page 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Stats page
 app.get('/code/:code', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/stats.html'));
 });
@@ -39,18 +44,8 @@ app.get('/:code', async (req, res) => {
     if (result.rowCount === 0) {
       return res.status(404).send(`
         <html>
-          <head>
-            <title>404 Not Found - TinyLink</title>
-            <style>
-              body { font-family: Segoe UI, Arial, sans-serif; background: #eef5fd; color: #3163b8; text-align: center; margin-top: 8em; }
-              h1 { font-size: 3em; margin-bottom: 0.5em;}
-              p { font-size: 1.2em;}
-            </style>
-          </head>
-          <body>
-            <h1>404 - Link Not Found</h1>
-            <p>This short URL does not exist or has been deleted.</p>
-          </body>
+        <head><title>404 Not Found - TinyLink</title></head>
+        <body><h1>404 - Link Not Found</h1><p>This short URL does not exist or has been deleted.</p></body>
         </html>
       `);
     }
@@ -69,11 +64,6 @@ app.get('/:code', async (req, res) => {
   }
 });
 
-// Home page (root)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-// Start server (local + Render + Railway)
+// Server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
