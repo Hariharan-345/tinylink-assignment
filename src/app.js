@@ -20,6 +20,11 @@ app.use('/api/links', linksRouter);
 // Favicon handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
+// Stats page (MUST BE ABOVE redirect route)
+app.get('/code/:code', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/stats.html'));
+});
+
 // Redirect for short URLs
 app.get('/:code', async (req, res) => {
   try {
