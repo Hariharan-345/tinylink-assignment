@@ -10,9 +10,11 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-  
-// Serve all files in public/ as static assets
+
+// Serve static files from /public
 app.use(express.static(path.join(__dirname, '../public')));
+
+// API routes
 app.use('/api/links', linksRouter);
 
 // Favicon handler
@@ -21,9 +23,13 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 // Redirect for short URLs
 app.get('/:code', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM links WHERE short_code=$1', [req.params.code]);
+    const result = await pool.query(
+      'SELECT * FROM links WHERE short_code=$1',
+      [req.params.code]
+    );
+
     if (result.rowCount === 0) {
-      res.status(404).send(`
+      return res.status(404).send(`
         <html>
           <head>
             <title>404 Not Found - TinyLink</title>
@@ -39,32 +45,30 @@ app.get('/:code', async (req, res) => {
           </body>
         </html>
       `);
-      return;
     }
+
     const link = result.rows[0];
     await pool.query(
       'UPDATE links SET click_count = click_count + 1, last_clicked = CURRENT_TIMESTAMP WHERE short_code=$1',
       [req.params.code]
     );
-    res.redirect(link.original_url);
+
+    return res.redirect(link.original_url);
+
   } catch (err) {
-    res.status(500).send('Server error');
+    console.error(err);
+    return res.status(500).send('Server error');
   }
 });
 
-// Healthcheck
+// Health check (important for Render & Railway)
 app.get('/healthz', (req, res) => res.json({ status: "ok" }));
 
-// Home (when serving root directly, if not matched)
+// Home page (root)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Listen on local only if not serverless (Vercel will handle export)
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
-}
-
-// Export for Vercel serverless
-module.exports = app;
+// Start server normally (for local + Render + Railway)
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
