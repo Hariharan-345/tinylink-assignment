@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TinyLink</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="main-container">
+    <h1>TinyLink</h1>
+    <form id="shortenForm">
+      <input type="url" id="originalUrl" placeholder="Paste a URL to shorten" required />
+      <button type="submit">Shorten</button>
+    </form>
+    <div id="result"></div>
+    <div id="links-wrap">
+      <div id="links"></div>
+    </div>
+  </div>
+  <script>
+    // Shorten handler
+    document.getElementById('shortenForm').onsubmit = async e => {
+      e.preventDefault();
+      document.getElementById('result').textContent = '';
+      const url = document.getElementById('originalUrl').value;
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ original_url: url })
+      });
+      const data = await res.json();
+      if (res.ok && data.short_code) {
+        document.getElementById('result').innerHTML =
+          'Short URL: <a href="/' + data.short_code + '" target="_blank">' + window.location.origin + '/' + data.short_code + '</a>';
+        loadLinks();
+      } else {
+        document.getElementById('result').innerHTML = '<span class="error">' + (data.error || 'Error') + '</span>';
+      }
+    };
+
+    // Load all links for dashboard, from DB
+    async function loadLinks() {
+      const res = await fetch('/api/links');
+      const links = await res.json();
+      const container = document.getElementById('links');
+      if (Array.isArray(links) && links.length) {
+        let html = `<table><tr>
+          <th>Short URL</th><th>Target</th><th>Total Clicks</th><th>Last Clicked</th><th>Actions</th></tr>`;
+        links.forEach(link => {
+          html += `<tr>
+            <td><a href="/${link.short_code}" target="_blank">${window.location.origin}/${link.short_code}</a></td>
+            <td><span title="${link.original_url}">${link.original_url.length > 60 ? link.original_url.slice(0, 58) + '...' : link.original_url}</span></td>
+            <td>${link.click_count}</td>
+            <td>${link.last_clicked ? new Date(link.last_clicked).toLocaleString() : ''}</td>
+            <td>
+              <button onclick="deleteLink('${link.short_code}')">Delete</button>
+            </td>
+          </tr>`;
+        });
+        html += `</table>`;
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<span class="error">No links found.</span>';
+      }
+    }
+
+    // Delete a link
+    async function deleteLink(short_code) {
+      let ok = confirm('Delete this link?');
+      if (!ok) return;
+      const res = await fetch('/api/links/' + short_code, { method: 'DELETE' });
+      if (res.status === 204) {
+        loadLinks();
+        document.getElementById('result').textContent = '';
+      } else {
+        alert('Delete failed');
+      }
+    }
+
+    // Always load the links from DB when page loads!
+    window.onload = loadLinks;
+  </script>
+</body>
+</html>
